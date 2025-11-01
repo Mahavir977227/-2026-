@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Sort Cash Game - पैसे कमाएं</title>
+    
+    <!-- Razorpay और Firebase Scripts -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #6a11cb; --secondary-color: #2575fc; --success-color: #4CAF50;
+            --warning-color: #ff9800; --danger-color: #f44336; --dark-bg: #1a1a2e;
+            --card-bg: #16213e; --text-light: #eee; --text-muted: #aaa;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: var(--text-light); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 10px; }
+        .app-container { width: 100%; max-width: 450px; height: 100vh; max-height: 900px; background: var(--dark-bg); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        header { background: var(--card-bg); padding: 15px; text-align: center; border-bottom: 2px solid var(--primary-color); z-index: 10; }
+        header h1 { font-size: 22px; margin-bottom: 8px; }
+        .balance-display { font-size: 26px; font-weight: bold; color: var(--success-color); }
+        main { flex-grow: 1; padding: 15px; overflow-y: auto; padding-bottom: 80px; }
+        .page { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        section { background: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; }
+        h2 { font-size: 18px; margin-bottom: 15px; color: var(--secondary-color); border-bottom: 1px solid #444; padding-bottom: 5px; }
+        #game-info { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 16px; }
+        #game-board { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .tube { width: 60px; height: 180px; border: 3px solid #555; border-radius: 0 0 25px 25px; background: rgba(255, 255, 255, 0.1); display: flex; flex-direction: column-reverse; cursor: pointer; transition: transform 0.2s; overflow: hidden; }
+        .tube.selected { border-color: var(--warning-color); box-shadow: 0 0 15px var(--warning-color); }
+        .water { width: 100%; height: 45px; }
+        .game-controls { display: flex; gap: 10px; }
+        .game-controls button, .action-button { flex: 1; padding: 12px; background: var(--success-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        .game-controls button { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); }
+        #referral-link { background: #333; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; word-wrap: break-word; font-weight: bold;}
+        .vip-plan { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #333; border-radius: 10px; margin-bottom: 15px; }
+        .buy-button { padding: 10px 20px; background: var(--warning-color); color: var(--dark-bg); border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; background: #333; border: 1px solid #555; border-radius: 8px; color: var(--text-light); margin-bottom: 15px; font-size: 16px; }
+        nav { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--card-bg); display: flex; justify-content: space-around; padding: 10px 0; border-top: 2px solid var(--primary-color); }
+        .nav-btn { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
+        .nav-btn.active { color: var(--secondary-color); }
+        .loading-screen, .welcome-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark-bg); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.5s; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255, 255, 255, 0.1); border-radius: 50%; border-top-color: var(--primary-color); animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 20px; font-size: 18px; }
+        .welcome-screen .kohli-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 5; }
+        .welcome-screen .welcome-text { position: relative; z-index: 10; font-size: 28px; font-weight: bold; color: #fff; background-color: rgba(0, 0, 0, 0.5); padding: 10px 20px; border-radius: 10px; margin-top: 70vh; text-shadow: 2px 2px 4px #000; }
+    </style>
+</head>
+<body>
+
+    <div class="welcome-screen" id="welcomeScreen">
+        <!-- ✅ नई इमेज यहां अपडेट की गई है -->
+        <img src="a79875b3-e748-4b59-ab3b-4eb6cebdfd6f.jpg" alt="Welcome" class="kohli-image">
+        <div class="welcome-text">👉 फ्री पैसा कमाओ</div>
+    </div>
+
+    <div class="loading-screen" id="loadingScreen" style="display:none;"><div class="spinner"></div><div class="loading-text">कनेक्ट हो रहा है...</div></div>
+
+    <div class="app-container" style="display:none;">
+        <header>
+            <h1>🧪 Water Sort & More</h1>
+            <div class="balance-display">₹<span id="userBalance">0.00</span></div>
+        </header>
+        <main>
+            <div id="game-page" class="page active">
+                <section>
+                    <h2>पज़ल हल करें और कमाएं</h2>
+                    <div id="game-info"><span>लेवल: <strong id="currentLevel">1</strong></span><span>मूव्स: <strong id="moveCount">0</strong></span></div>
+                    <div id="game-board"></div>
+                    <div class="game-controls">
+                        <button id="restartButton">रीस्टार्ट</button>
+                        <button id="addTubeButton">खाली गिलास (₹2)</button>
+                    </div>
+                </section>
+            </div>
+            <div id="refer-page" class="page">
+                <section>
+                    <h2>रेफर करें और कमाएं</h2>
+                    <p>यह रेफरल लिंक अपने दोस्तों को भेजें। जब वे इस लिंक से जुड़ेंगे तो आपको ₹5 मिलेंगे।</p>
+                    <div id="referral-link">...</div>
+                    <button id="copyLinkButton" class="action-button">लिंक कॉपी करें</button>
+                </section>
+            </div>
+            <div id="vip-page" class="page">
+                <section>
+                    <h2>VIP प्लान खरीदें</h2>
+                    <div id="vipStatus" style="text-align: center; margin-bottom: 20px; font-size: 16px;"></div>
+                    <div class="vip-plan"><div><h3>VIP 1</h3><p>कीमत: ₹29, निकासी लिमिट: ₹500</p></div><button class="buy-button" data-plan="1" data-price="29">₹29 में खरीदें</button></div>
+                    <div class="vip-plan"><div><h3>VIP 2</h3><p>कीमत: ₹99, निकासी लिमिट: ₹1000</p></div><button class="buy-button" data-plan="2" data-price="99">₹99 में खरीदें</button></div>
+                </section>
+            </div>
+            <div id="withdraw-page" class="page">
+                <section>
+                    <h2>पैसे निकालें</h2>
+                    <p id="withdraw-notice" style="color: var(--warning-color); text-align: center; margin-bottom: 15px;">पहले VIP प्लान लें फिर निकासी होगी</p>
+                    <input type="text" id="upiNumber" placeholder="अपना UPI/Paytm नंबर डालें">
+                    <input type="number" id="withdrawAmount" placeholder="राशि डालें (कम से कम ₹200)">
+                    <button id="withdrawButton" class="action-button" disabled>निकासी करें</button>
+                </section>
+            </div>
+        </main>
+        <nav>
+            <button class="nav-btn active" data-target="game-page">🎮</button>
+            <button class="nav-btn" data-target="refer-page">👥</button>
+            <button class="nav-btn" data-target="vip-page">👑</button>
+            <button class="nav-btn" data-target="withdraw-page">💰</button>
+        </nav>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyD6SVQ40IryW3rgFHd95VkeXlplcA80Gj4",
+          authDomain: "ernig-c1040.firebaseapp.com",
+          databaseURL: "https://ernig-c1040-default-rtdb.firebaseio.com",
+          projectId: "ernig-c1040",
+          storageBucket: "ernig-c1040.firebasestorage.app",
+          messagingSenderId: "349286146477",
+          appId: "1:349286146477:web:9e037f74bf7876d4594124"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        const pourSound = new Audio('pouring-liquid-in-a-cup-386762.mp3');
+        const winSound = new Audio('ElevenLabs_2025-10-24T09_08_59_Alice_pre_sp100_s50_sb75_se0_b_m2.mp3');
+
+        let userId = null;
+        let userData = { balance: 0, level: 1, moves: 0, isVip: false, vipPlan: 0, referralCode: 'CASH' + Math.floor(Math.random() * 90000 + 10000) };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupPaymentLinks();
+
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            setTimeout(() => {
+                welcomeScreen.style.opacity = '0';
+                setTimeout(() => {
+                    welcomeScreen.style.display = 'none';
+                    document.getElementById('loadingScreen').style.display = 'flex';
+                    
+                    auth.onAuthStateChanged(user => {
+                        if (user) { userId = user.uid; loadUserData(); } 
+                        else { auth.signInAnonymously(); }
+                    });
+                }, 500);
+            }, 3000);
+        });
+
+        function loadUserData() {
+            database.ref('users/' + userId).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    userData = { ...userData, ...snapshot.val() };
+                } else {
+                    saveUserData();
+                }
+                document.querySelector('.app-container').style.display = 'flex';
+                hideLoadingScreen();
+                updateUI();
+                initializeGame();
+            }).catch(e => {
+                console.error("Database read error:", e);
+                alert("डेटाबेस से कनेक्ट नहीं हो पा रहा।");
+                hideLoadingScreen();
+            });
+        }
+        
+        function saveUserData() { if (userId) database.ref('users/' + userId).set(userData); }
+        
+        function updateUI() {
+            document.getElementById('userBalance').textContent = userData.balance.toFixed(2);
+            document.getElementById('currentLevel').textContent = userData.level;
+            document.getElementById('moveCount').textContent = userData.moves;
+            document.getElementById('referral-link').textContent = `${window.location.origin}${window.location.pathname}?ref=${userData.referralCode}`;
+            
+            document.getElementById('vipStatus').innerHTML = userData.isVip ? `<p style="color:var(--success-color);">आप VIP ${userData.vipPlan} सदस्य हैं।</p>` : `<p>आप अभी VIP सदस्य नहीं हैं।</p>`;
+
+            const withdrawNotice = document.getElementById('withdraw-notice');
+            const withdrawButton = document.getElementById('withdrawButton');
+            if (userData.isVip) {
+                withdrawNotice.style.display = 'none';
+                withdrawButton.disabled = false;
+            } else {
+                withdrawNotice.style.display = 'block';
+                withdrawButton.disabled = true;
+            }
+        }
+
+        function hideLoadingScreen() {
+            const ls = document.getElementById('loadingScreen');
+            if(ls) { ls.style.opacity = '0'; setTimeout(() => { ls.style.display = 'none'; }, 500); }
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.target === pageId));
+        }
+        document.querySelectorAll('.nav-btn').forEach(button => button.addEventListener('click', () => showPage(button.dataset.target)));
+
+        document.getElementById('copyLinkButton').addEventListener('click', () => {
+            navigator.clipboard.writeText(document.getElementById('referral-link').textContent).then(() => alert("रेफरल लिंक कॉपी हो गया!"));
+        });
+
+        function setupPaymentLinks() {
+            // VIP 1 (₹29) बटन
+            document.querySelector('.buy-button[data-plan="1"]').addEventListener('click', () => {
+                if (userData.isVip) { alert(`आप पहले से ही VIP सदस्य हैं।`); return; }
+                window.open('upi://pay?pa=mahavir972@axl&pn=Plan%2029&am=29&cu=INR&tn=Payment%20for%2029%20plan', '_blank');
+            });
+
+            // VIP 2 (₹99) बटन
+            document.querySelector('.buy-button[data-plan="2"]').addEventListener('click', () => {
+                if (userData.isVip) { alert(`आप पहले से ही VIP सदस्य हैं।`); return; }
+                window.open('upi://pay?pa=mahavir972@axl&pn=Plan%2099&am=99&cu=INR&tn=Payment%20for%2099%20plan', '_blank');
+            });
+
+            // खाली गिलास (₹2) बटन
+            document.getElementById('addTubeButton').addEventListener('click', () => {
+                if (userData.balance >= 2) {
+                    userData.balance -= 2;
+                    currentGameState.push([]);
+                    saveUserData();
+                    updateUI();
+                    renderGame();
+                    alert('आपने ₹2 में एक खाली गिलास खरीदा!');
+                } else {
+                    alert('खाली गिलास खरीदने के लिए पर्याप्त बैलेंस नहीं है। भुगतान करें।');
+                    window.open('https://rzp.io/rzp/58NvkS9v', '_blank');
+                }
+            });
+        }
+
+        document.getElementById('withdrawButton').addEventListener('click', () => {
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            if (isNaN(amount) || amount < 200) { alert("निकासी राशि कम से कम ₹200 होनी चाहिए।"); return; }
+            if (userData.balance < amount) { alert("आपके खाते में पर्याप्त बैलेंस नहीं है।"); return; }
+            
+            userData.balance -= amount;
+            saveUserData(); updateUI();
+            alert(`₹${amount} की निकासी का अनुरोध स्वीकार कर लिया गया है।`);
+            document.getElementById('withdrawAmount').value = '';
+        });
+        
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#FFD700'];
+        let selectedTubeIndex = null;
+        let currentGameState = [];
+
+        function initializeGame() {
+            currentGameState = generateLevel(userData.level);
+            userData.moves = 0; selectedTubeIndex = null;
+            renderGame(); updateUI();
+        }
+        document.getElementById('restartButton').addEventListener('click', initializeGame);
+        
+        function generateLevel(level) {
+            let tubeCount, colorCount;
+            if (level <= 5) { tubeCount = 4; colorCount = 2; } 
+            else {
+                tubeCount = Math.min(7, 5 + Math.floor(level / 5));
+                colorCount = Math.min(5, 3 + Math.floor(level / 7));
+            }
+            const emptyTubes = 2;
+            const filledTubes = tubeCount - emptyTubes;
+            
+            let allColors = [];
+            for (let i = 0; i < colorCount; i++) for (let j = 0; j < 4; j++) allColors.push(colors[i % colors.length]);
+            
+            for (let i = allColors.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allColors[i], allColors[j]] = [allColors[j], allColors[i]];
+            }
+
+            const tubes = Array.from({ length: filledTubes }, () => []);
+            let colorIndex = 0;
+            while (colorIndex < allColors.length) {
+                for (let i = 0; i < filledTubes && colorIndex < allColors.length; i++) tubes[i].push(allColors[colorIndex++]);
+            }
+            for (let i = 0; i < emptyTubes; i++) tubes.push([]);
+            return tubes;
+        }
+
+        function renderGame() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            currentGameState.forEach((tube, index) => {
+                const tubeEl = document.createElement('div');
+                tubeEl.className = 'tube';
+                if (selectedTubeIndex === index) tubeEl.classList.add('selected');
+                tube.forEach(color => {
+                    const waterEl = document.createElement('div');
+                    waterEl.className = 'water';
+                    waterEl.style.backgroundColor = color;
+                    tubeEl.appendChild(waterEl);
+                });
+                tubeEl.addEventListener('click', () => handleTubeClick(index));
+                board.appendChild(tubeEl);
+            });
+        }
+
+        function handleTubeClick(index) {
+            if (selectedTubeIndex === null) {
+                if (currentGameState[index].length > 0) selectedTubeIndex = index;
+            } else {
+                const source = currentGameState[selectedTubeIndex];
+                const dest = currentGameState[index];
+                if (selectedTubeIndex !== index && (dest.length < 4) && (dest.length === 0 || dest[dest.length - 1] === source[source.length - 1])) {
+                    dest.push(source.pop());
+                    userData.moves++;
+                    pourSound.play();
+                    checkWinCondition();
+                }
+                selectedTubeIndex = null;
+            }
+            renderGame(); updateUI();
+        }
+
+        function checkWinCondition() {
+            if (currentGameState.every(t => t.length === 0 || (t.length === 4 && new Set(t).size === 1))) {
+                const earnings = userData.level <= 5 ? 3 : 2;
+                userData.balance += earnings;
+                userData.level++;
+                saveUserData();
+                winSound.play();
+                alert(`🎉 बधाई! आपने ₹${earnings} जीते!`);
+                initializeGame();
+            }
+        }
+    </script>
+</body>
+</html>
