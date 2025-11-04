@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Sort Cash Game - पैसे कमाएं</title>
     
-    <!-- Razorpay और Firebase Scripts -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -55,7 +54,6 @@
 <body>
 
     <div class="welcome-screen" id="welcomeScreen">
-        <!-- ✅ नई इमेज यहां अपडेट की गई है -->
         <img src="a79875b3-e748-4b59-ab3b-4eb6cebdfd6f.jpg" alt="Welcome" class="kohli-image">
         <div class="welcome-text">👉 फ्री पैसा कमाओ</div>
     </div>
@@ -211,13 +209,15 @@
             // VIP 1 (₹29) बटन
             document.querySelector('.buy-button[data-plan="1"]').addEventListener('click', () => {
                 if (userData.isVip) { alert(`आप पहले से ही VIP सदस्य हैं।`); return; }
-                window.open('upi://pay?pa=mahavir972@axl&pn=Plan%2029&am=29&cu=INR&tn=Payment%20for%2029%20plan', '_blank');
+                // ✅ Razorpay Link 1
+                window.open('https://rzp.io/rzp/EK8reU9', '_blank');
             });
 
             // VIP 2 (₹99) बटन
             document.querySelector('.buy-button[data-plan="2"]').addEventListener('click', () => {
                 if (userData.isVip) { alert(`आप पहले से ही VIP सदस्य हैं।`); return; }
-                window.open('upi://pay?pa=mahavir972@axl&pn=Plan%2099&am=99&cu=INR&tn=Payment%20for%2099%20plan', '_blank');
+                // ✅ Razorpay Link 2
+                window.open('https://rzp.io/rzp/PJqmLlWr', '_blank');
             });
 
             // खाली गिलास (₹2) बटन
@@ -231,7 +231,8 @@
                     alert('आपने ₹2 में एक खाली गिलास खरीदा!');
                 } else {
                     alert('खाली गिलास खरीदने के लिए पर्याप्त बैलेंस नहीं है। भुगतान करें।');
-                    window.open('https://rzp.io/rzp/58NvkS9v', '_blank');
+                    // ✅ Razorpay Link 1 for general payment/top-up
+                    window.open('https://rzp.io/rzp/EK8reU9', '_blank');
                 }
             });
         }
